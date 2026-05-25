@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: storage
+    description: Object storage operations
+  - name: media
+    description: Wedding media operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,115 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getObject
+      tags: [storage]
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Object data
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /media:
+    get:
+      operationId: listMedia
+      tags: [media]
+      summary: List all media items
+      responses:
+        "200":
+          description: List of media
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+    post:
+      operationId: createMedia
+      tags: [media]
+      summary: Create a media record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMediaBody"
+      responses:
+        "201":
+          description: Created media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+
+  /media/{id}:
+    patch:
+      operationId: updateMedia
+      tags: [media]
+      summary: Update a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMediaBody"
+      responses:
+        "200":
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Delete a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +144,86 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        name:
+          type: string
+        size:
+          type: number
+        contentType:
+          type: string
+      required: [name, size, contentType]
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          type: object
+          properties:
+            name:
+              type: string
+            size:
+              type: number
+            contentType:
+              type: string
+          required: [name, size, contentType]
+      required: [uploadURL, objectPath, metadata]
+
+    MediaItem:
+      type: object
+      properties:
+        id:
+          type: string
+        objectPath:
+          type: string
+        type:
+          type: string
+          enum: [image, video]
+        caption:
+          type: string
+          nullable: true
+        uploader:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+        createdAt:
+          type: string
+      required: [id, objectPath, type, visibility, createdAt]
+
+    CreateMediaBody:
+      type: object
+      properties:
+        objectPath:
+          type: string
+        type:
+          type: string
+          enum: [image, video]
+        caption:
+          type: string
+          nullable: true
+        uploader:
+          type: string
+          nullable: true
+        visibility:
+          type: string
+          enum: [public, private]
+      required: [objectPath, type, visibility]
+
+    UpdateMediaBody:
+      type: object
+      properties:
+        visibility:
+          type: string
+          enum: [public, private]
+        caption:
+          type: string
+          nullable: true
