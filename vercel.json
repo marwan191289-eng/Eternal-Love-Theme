@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/wedding run build && rm -rf public && cp -r artifacts/wedding/dist public",
-  "outputDirectory": "public",
+  "buildCommand": "pnpm --filter @workspace/wedding run build",
+  "outputDirectory": "artifacts/wedding/dist",
   "framework": "vite",
   "rewrites": [
     {
