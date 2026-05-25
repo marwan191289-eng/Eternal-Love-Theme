@@ -34,6 +34,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { MemorySidebar } from "@/components/MemorySidebar";
 import { Fireworks } from "@/components/Fireworks";
+import { StartOverlay } from "@/components/StartOverlay";
 import { useReveal } from "@/hooks/useReveal";
 import {
   type MediaItem,
@@ -191,38 +192,49 @@ export function WeddingPage() {
   const [dbMedia, setDbMedia] = useState<MediaItem[]>([]);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [unlocked, setUnlocked] = useState(false);
-  const [showFireworks, setShowFireworks] = useState(true);
+  const [showFireworks, setShowFireworks] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
 
   const musicRef = useRef<BackgroundMusicRef | null>(null);
   const activeVideos = useRef<Set<HTMLVideoElement>>(new Set());
 
   useEffect(() => {
     setUnlocked(isUnlocked());
+  }, []);
+
+  const handleStartJourney = () => {
+    setShowOverlay(false);
+    setShowFireworks(true);
     // Hide fireworks after 5 seconds
     const timer = setTimeout(() => setShowFireworks(false), 5000);
     return () => clearTimeout(timer);
-  }, []);
+  };
 
   const loadData = useCallback(async () => {
     try {
-      const [mediaRes, msgRes] = await Promise.all([
-        fetchMedia(),
-        fetch("/api/admin-api/messages").then(r => {
-          if (!r.ok) throw new Error('Failed to fetch messages');
+      console.log('[WeddingPage] Loading data...');
+      const mediaRes = await fetchMedia();
+      console.log('[WeddingPage] Media loaded:', mediaRes.length);
+      
+      const msgRes = await fetch("/api/admin-api/messages")
+        .then(r => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
-        })
-      ]);
+        });
+      
+      console.log('[WeddingPage] Messages loaded:', msgRes);
       setDbMedia(mediaRes);
       setMessages(msgRes || []);
-      console.log('Messages loaded:', msgRes);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('[WeddingPage] Error loading data:', error);
     }
   }, []);
 
   useEffect(() => {
+    // Load data immediately on mount
     loadData();
-    const interval = setInterval(loadData, 10000);
+    // Then reload every 15 seconds
+    const interval = setInterval(loadData, 15000);
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -255,34 +267,20 @@ export function WeddingPage() {
   }))
 );
 
-// Ensure messages are loaded
-const displayMessages = messages.filter(m => m.isVisible).length > 0 
-  ? messages.filter(m => m.isVisible)
-  : messages;
+
 
   return (
     <div className="relative min-h-screen text-foreground overflow-x-hidden" dir="rtl">
+      {/* Start Overlay */}
+      {showOverlay && <StartOverlay onStart={handleStartJourney} />}
+
       {/* Fireworks on page load */}
       {showFireworks && <Fireworks />}
-
-      {/* Debug: Check if messages are loading */}
-      {messages.length === 0 && (
-        <div className="fixed top-20 left-6 text-xs text-gold/50 z-20" style={{ display: 'none' }}>
-          Messages: {messages.length}
-        </div>
-      )}
 
       <FloatingPetals />
       <SplashScreen />
       <BackgroundMusic onRef={handleMusicRef} />
       <Header />
-
-      {/* Ensure messages are loaded before rendering */}
-      {messages.length === 0 && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center z-50" style={{ display: 'none' }}>
-          <div className="text-gold">Loading...</div>
-        </div>
-      )}
 
       {/* Memory Sidebar */}
       {allImages.length > 0 && <MemorySidebar images={allImages} position="right" />}
@@ -398,7 +396,7 @@ const displayMessages = messages.filter(m => m.isVisible).length > 0
 
           <div className="mt-20 space-y-12">
             {messages && messages.length > 0 ? (
-              messages.map((msg, idx) => (
+              messages.filter(m => m.isVisible).map((msg, idx) => (
                 <Reveal key={msg.id} delay={idx * 0.1} className="relative p-8 md:p-12 rounded-2xl border border-gold/20 bg-card/40 backdrop-blur text-right">
                   <div className="absolute -top-6 right-10 h-12 w-12 rounded-full bg-gold flex items-center justify-center text-primary-foreground shadow-glow">
                     <MessageSquare size={24} />
@@ -410,7 +408,10 @@ const displayMessages = messages.filter(m => m.isVisible).length > 0
                 </Reveal>
               ))
             ) : (
-              <div className="text-center text-gold/60 py-8">جاري تحميل الرسائل...</div>
+              <div className="text-center text-gold/60 py-12">
+                <div className="text-lg mb-4">جاري تحميل الرسائل...</div>
+                <div className="h-8 w-8 rounded-full border-2 border-gold border-t-transparent animate-spin mx-auto" />
+              </div>
             )}
           </div>
         </div>
