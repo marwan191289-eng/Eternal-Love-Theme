@@ -28,7 +28,19 @@ const DEFAULT_STORE: AppStore = {
     {
       id: "1",
       author: '💌 رسالة من مروان نجم',
-      content: `إلى أختي وحبيبتي العروسة،\nأرقى وأجمل أميرة نجم،\n\nعايزِك بس تكوني متأكدة إنّي والله ما منعني عن الحضور غير العذر القهري، الخارج عن الإرادة المنفردة.\nبس أكيد في يوم من الأيام هنتقابل، وهقدر أشرحلك الموقف كامل.\nسامحيني يا حبيبتي.\n\nوسلامي لعلاء زوجِك.\nأترككم في رعاية الله وحفظه.\nألف مبروك يا أميرة، وربنا يسعدك ويبارك في عمرك.\n\nمع أطيب التمنيات،\nمروان نجم`,
+      content: `إلى أختي وحبيبتي العروسة،
+أرقى وأجمل أميرة نجم،
+
+عايزِك بس تكوني متأكدة إنّي والله ما منعني عن الحضور غير العذر القهري، الخارج عن الإرادة المنفردة.
+بس أكيد في يوم من الأيام هنتقابل، وهقدر أشرحلك الموقف كامل.
+سامحيني يا حبيبتي.
+
+وسلامي لعلاء زوجِك.
+أترككم في رعاية الله وحفظه.
+ألف مبروك يا أميرة، وربنا يسعدك ويبارك في عمرك.
+
+مع أطيب التمنيات،
+مروان نجم`,
       color: '#e8b4a8',
       isVisible: true,
       createdAt: new Date().toISOString()
@@ -36,7 +48,26 @@ const DEFAULT_STORE: AppStore = {
     {
       id: "2",
       author: '💕 تهنئة سارة نجم وحمزة نجم',
-      content: `مبروك يا الأميرة عمتو!  \nأتمنالك السعادة والتوفيق في كل لحظات حياتك الجاية.\nالسلام لحين اللقاء يا حبيبة قلبي أنا وحمزة.\nأنا بتكلم بلساني وبلسان حمزة علشان هو لسه صغير ومبيعرفش يتكلم.\n\nمروان دايمًا يقولي إني نسخة منك، وأنا بقوله: لأ… هي أجمل كتير بصراحة.\nبس لما شفت الفيديوهات والصور حسّيت إن فعلاً ممكن أكون في يوم من الأيام شبهِك، وده أكيد هيكون أكبر ضربة حظ ليا في حياتي… إني أكون حتى في نص جمالك يا الأميرة أميرة.\n\nبحبك أوي يا عمتو،\nوحمزة بيقولك: "ها اه اه" — أكيد يقصد إنه بيحبك هو كمان.\nمين يشوفك وما يحبكيش يا عمتو؟\n\n(ملحوظة):  \nمتستغربيش إني بناديه باسمه… إحنا أصحاب.\nأنا بقوله "يا بابا" بس لما بيكون زعلان مني، لأننا ساعتها مبنبقاش صحاب.\n\nالسلام لحين اللقاء.\nباي باي يا الأميرة عمتو أميرة.\n\nبحبك جدًا… وحمزة كمان بيحبك جدًا.`,
+      content: `مبروك يا الأميرة عمتو!  
+أتمنالك السعادة والتوفيق في كل لحظات حياتك الجاية.
+السلام لحين اللقاء يا حبيبة قلبي أنا وحمزة.
+أنا بتكلم بلساني وبلسان حمزة علشان هو لسه صغير ومبيعرفش يتكلم.
+
+مروان دايمًا يقولي إني نسخة منك، وأنا بقوله: لأ… هي أجمل كتير بصراحة.
+بس لما شفت الفيديوهات والصور حسّيت إن فعلاً ممكن أكون في يوم من الأيام شبهِك، وده أكيد هيكون أكبر ضربة حظ ليا في حياتي… إني أكون حتى في نص جمالك يا الأميرة أميرة.
+
+بحبك أوي يا عمتو،
+وحمزة بيقولك: "ها اه اه" — أكيد يقصد إنه بيحبك هو كمان.
+مين يشوفك وما يحبكيش يا عمتو؟
+
+(ملحوظة):  
+متستغربيش إني بناديه باسمه… إحنا أصحاب.
+أنا بقوله "يا بابا" بس لما بيكون زعلان مني، لأننا ساعتها مبنبقاش صحاب.
+
+السلام لحين اللقاء.
+باي باي يا الأميرة عمتو أميرة.
+
+بحبك جدًا… وحمزة كمان بيحبك جدًا.`,
       color: '#d4a574',
       isVisible: true,
       createdAt: new Date().toISOString()
@@ -53,20 +84,34 @@ function readStore(): AppStore {
     return DEFAULT_STORE;
   }
   try {
-    return JSON.parse(readFileSync(DATA_FILE, "utf-8")) as AppStore;
-  } catch {
+    const data = JSON.parse(readFileSync(DATA_FILE, "utf-8")) as AppStore;
+    // Ensure settings exist
+    if (!data.settings) {
+      data.settings = { adminPassword: "amira2024" };
+    }
+    return data;
+  } catch (e) {
+    console.error("Error reading store:", e);
     return DEFAULT_STORE;
   }
 }
 
 function writeStore(store: AppStore) {
-  writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), "utf-8");
+  try {
+    writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Error writing store:", e);
+  }
 }
 
 // Auth
 router.post("/login", (req: Request, res: Response) => {
   const { password } = req.body;
   const store = readStore();
+  
+  console.log("Login attempt with password:", password);
+  console.log("Stored password:", store.settings.adminPassword);
+  
   if (store.settings.adminPassword === password) {
     res.json({ success: true });
   } else {
@@ -77,6 +122,7 @@ router.post("/login", (req: Request, res: Response) => {
 router.post("/change-password", (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
   const store = readStore();
+  
   if (store.settings.adminPassword === currentPassword) {
     store.settings.adminPassword = newPassword;
     writeStore(store);
@@ -91,9 +137,11 @@ router.get("/messages", (req: Request, res: Response) => {
   const { all } = req.query;
   const store = readStore();
   let messages = store.messages;
+  
   if (all !== "true") {
     messages = messages.filter(m => m.isVisible);
   }
+  
   res.json(messages);
 });
 
@@ -118,6 +166,7 @@ router.patch("/messages/:id", (req: Request, res: Response) => {
   const updates = req.body;
   const store = readStore();
   const idx = store.messages.findIndex(m => m.id === id);
+  
   if (idx !== -1) {
     store.messages[idx] = { ...store.messages[idx], ...updates };
     writeStore(store);

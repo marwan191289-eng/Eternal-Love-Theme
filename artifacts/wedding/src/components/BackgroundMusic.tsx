@@ -24,12 +24,16 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
     if (!audio || started) return;
     try {
       audio.volume = volume;
-      audio.muted = false; // Ensure not muted for autoplay
-      await audio.play();
+      audio.muted = false;
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
       setIsPlaying(true);
       setStarted(true);
-    } catch {
-      // Autoplay blocked — wait for user interaction
+    } catch (error) {
+      console.log("Autoplay blocked, waiting for user interaction");
     }
   }, [started, volume]);
 
@@ -37,7 +41,7 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
     // Auto-play on mount with slight delay to ensure DOM is ready
     const timer = setTimeout(() => {
       tryPlay();
-    }, 500);
+    }, 100);
 
     const handleInteraction = () => {
       tryPlay();
@@ -48,17 +52,17 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
     };
 
     // Fallback on first interaction
-    document.addEventListener("click", handleInteraction);
-    document.addEventListener("touchstart", handleInteraction);
-    document.addEventListener("keydown", handleInteraction);
-    document.addEventListener("scroll", handleInteraction);
+    const events = ["click", "touchstart", "keydown", "scroll", "mousemove"];
+    events.forEach(event => {
+      document.addEventListener(event, handleInteraction);
+    });
 
     return () => {
       clearTimeout(timer);
-      document.removeEventListener("click", handleInteraction);
-      document.removeEventListener("touchstart", handleInteraction);
-      document.removeEventListener("keydown", handleInteraction);
-      document.removeEventListener("scroll", handleInteraction);
+      const events = ["click", "touchstart", "keydown", "scroll", "mousemove"];
+      events.forEach(event => {
+        document.removeEventListener(event, handleInteraction);
+      });
     };
   }, [tryPlay]);
 
@@ -145,11 +149,12 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
         loop
         preload="auto"
         autoPlay
+        playsInline
         style={{ display: "none" }}
       />
 
       <div
-        className="fixed bottom-6 right-6 z-40 flex flex-col items-start gap-2"
+        className="fixed bottom-6 right-6 z-30 flex flex-col items-start gap-2"
         onMouseEnter={() => setShowSlider(true)}
         onMouseLeave={() => setShowSlider(false)}
       >
@@ -183,12 +188,11 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
           onClick={toggleMute}
         title={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
         aria-label={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
-        autoFocus={true}
           className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all duration-300 ${
             isPlaying
               ? "bg-gold/20 border-gold/60 text-gold hover:bg-gold/30 pulse-glow"
               : "bg-card/60 border-gold/30 text-muted-foreground hover:border-gold/50 hover:text-gold"
-          } backdrop-blur hover:shadow-glow`}
+          } backdrop-blur hover:shadow-glow cursor-pointer`}
         >
           {isPlaying ? <WaveIcon /> : <MuteIcon />}
         </button>
