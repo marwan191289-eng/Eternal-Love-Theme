@@ -156,3 +156,11 @@
     pointer-events: none;
   }
 }
+* {
+  line-height: 1.6;
+}
+
+.message-card, .letter, .message-box, .letter-card {
+  padding-top: 20px !important;
+  overflow: visible !important;
+}
