@@ -78,6 +78,30 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 });
 
 /**
+ * GET /storage/objects/*path/redirect
+ *
+ * Returns a 302 redirect to a short-lived signed GCS URL.
+ * Use this for video elements — GCS natively supports Range requests so
+ * the browser can seek/buffer without proxying through the server.
+ */
+router.get("/storage/objects/*path/redirect", async (req: Request, res: Response) => {
+  try {
+    const raw = req.params.path;
+    const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
+    const objectPath = `/objects/${wildcardPath}`;
+    const signedURL = await objectStorageService.getObjectEntitySignedReadURL(objectPath);
+    res.redirect(302, signedURL);
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+    req.log.error({ err: error }, "Error generating signed URL for redirect");
+    res.status(500).json({ error: "Failed to generate signed URL" });
+  }
+});
+
+/**
  * GET /storage/objects/*
  *
  * Serve object entities from PRIVATE_OBJECT_DIR.

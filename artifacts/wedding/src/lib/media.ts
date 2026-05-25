@@ -95,6 +95,10 @@ export function mediaUrl(objectPath: string): string {
   return `/api/storage${objectPath}`;
 }
 
+export function videoStreamUrl(objectPath: string): string {
+  return `/api/storage${objectPath}/redirect`;
+}
+
 const STORAGE_KEY = "wedding_unlocked";
 const PASSWORD = "Amira14052026";
 

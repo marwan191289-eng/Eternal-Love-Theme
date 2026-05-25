@@ -36,6 +36,7 @@ import {
   deleteMedia,
   updateMedia,
   mediaUrl,
+  videoStreamUrl,
   isUnlocked,
   lock,
 } from "@/lib/media";
@@ -189,9 +190,10 @@ export function WeddingPage() {
   const uploadedImages = visibleMedia.filter((m) => m.type === "image");
   const uploadedVideos = visibleMedia.filter((m) => m.type === "video");
 
-  // Video player with music integration
-  function VideoPlayer({ src }: { src: string }) {
+  // Video player with music integration — uses signed GCS redirect for native Range support
+  function VideoPlayer({ objectPath }: { objectPath: string }) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const src = videoStreamUrl(objectPath);
     return (
       <video
         ref={videoRef}
@@ -199,12 +201,11 @@ export function WeddingPage() {
         className="h-full w-full"
         preload="metadata"
         playsInline
+        src={src}
         onPlay={() => videoRef.current && handleVideoPlay(videoRef.current)}
         onPause={() => videoRef.current && handleVideoPause(videoRef.current)}
         onEnded={() => videoRef.current && handleVideoPause(videoRef.current)}
-      >
-        <source src={src} />
-      </video>
+      />
     );
   }
 
@@ -478,7 +479,7 @@ export function WeddingPage() {
               <Reveal key={v.id} delay={i * 0.1}>
                 <figure className="overflow-hidden rounded-3xl border-2 border-gold/35 shadow-elegant">
                   <div className="aspect-video bg-background/80">
-                    <VideoPlayer src={mediaUrl(v.objectPath)} />
+                    <VideoPlayer objectPath={v.objectPath} />
                   </div>
                   <figcaption className="glass border-t border-gold/20 px-6 py-4 text-center">
                     <p className="font-display-ar text-base text-gold">{v.caption ?? "ذكرى من العرس"}</p>
