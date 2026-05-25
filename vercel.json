@@ -1,8 +1,1 @@
-{
-  "buildCommand": "pnpm --filter @workspace/wedding build",
-  "outputDirectory": "artifacts/wedding/dist",
-  "framework": "vite",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+
