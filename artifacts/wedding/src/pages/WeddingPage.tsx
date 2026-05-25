@@ -30,6 +30,10 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { FloatingPetals } from "@/components/FloatingPetals";
 import { PasswordGate } from "@/components/PasswordGate";
 import { MediaUploader } from "@/components/MediaUploader";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { MemorySidebar } from "@/components/MemorySidebar";
+import { Fireworks } from "@/components/Fireworks";
 import { useReveal } from "@/hooks/useReveal";
 import {
   type MediaItem,
@@ -187,12 +191,16 @@ export function WeddingPage() {
   const [dbMedia, setDbMedia] = useState<MediaItem[]>([]);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [unlocked, setUnlocked] = useState(false);
+  const [showFireworks, setShowFireworks] = useState(true);
 
   const musicRef = useRef<BackgroundMusicRef | null>(null);
   const activeVideos = useRef<Set<HTMLVideoElement>>(new Set());
 
   useEffect(() => {
     setUnlocked(isUnlocked());
+    // Hide fireworks after 5 seconds
+    const timer = setTimeout(() => setShowFireworks(false), 5000);
+    return () => clearTimeout(timer);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -235,14 +243,23 @@ export function WeddingPage() {
   const uploadedImages = visibleMedia.filter((m) => m.type === "image");
   const uploadedVideos = visibleMedia.filter((m) => m.type === "video");
 
+  const allImages = seedImages.concat(uploadedImages.map(m => ({ id: m.id, src: mediaUrl(m.objectPath), caption: m.caption || "" })));
+
   return (
     <div className="relative min-h-screen text-foreground overflow-x-hidden" dir="rtl">
+      {/* Fireworks on page load */}
+      {showFireworks && <Fireworks />}
+
       <FloatingPetals />
       <SplashScreen />
       <BackgroundMusic onRef={handleMusicRef} />
+      <Header />
+
+      {/* Memory Sidebar */}
+      <MemorySidebar images={allImages} position="right" />
 
       {/* ═══════════════════════ HERO ═══════════════════════════════════════ */}
-      <header className="relative isolate overflow-hidden min-h-screen flex items-center justify-center">
+      <header className="relative isolate overflow-hidden min-h-screen flex items-center justify-center pt-20">
         <img
           src={heroBg}
           alt=""
@@ -303,12 +320,13 @@ export function WeddingPage() {
             >
               ✉︎ رسائل من القلب
             </a>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-3 rounded-full border border-gold/30 bg-card/20 px-8 py-3.5 font-body-ar text-base text-gold/80 backdrop-blur transition-all duration-300 hover:border-gold/60 hover:text-gold hover:scale-105"
-            >
-              <Settings size={18} /> لوحة التحكم
-            </Link>
+          </div>
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+            <div className="w-6 h-10 border-2 border-gold/40 rounded-full flex items-start justify-center p-2">
+              <div className="w-1 h-2 bg-gold/60 rounded-full animate-pulse" />
+            </div>
           </div>
         </div>
       </header>
@@ -323,7 +341,7 @@ export function WeddingPage() {
           </Reveal>
 
           <div className="mt-20 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {seedImages.concat(uploadedImages.map(m => ({ id: m.id, src: mediaUrl(m.objectPath), caption: m.caption || "" }))).map((img, idx) => (
+            {allImages.map((img, idx) => (
               <Reveal key={img.id} delay={idx * 0.05} className="group relative aspect-[4/5] overflow-hidden rounded-lg bg-card/20">
                 <img
                   src={img.src}
@@ -386,11 +404,7 @@ export function WeddingPage() {
         </div>
       </section>
 
-      <footer className="py-20 text-center border-t border-gold/10">
-        <p className="font-display tracking-widest text-xs text-gold/40">
-          ETERNAL LOVE · AMIRA & ALAA · 2026
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

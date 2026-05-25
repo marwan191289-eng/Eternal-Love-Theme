@@ -24,6 +24,7 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
     if (!audio || started) return;
     try {
       audio.volume = volume;
+      audio.muted = false; // Ensure not muted for autoplay
       await audio.play();
       setIsPlaying(true);
       setStarted(true);
@@ -33,6 +34,11 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
   }, [started, volume]);
 
   useEffect(() => {
+    // Auto-play on mount with slight delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      tryPlay();
+    }, 500);
+
     const handleInteraction = () => {
       tryPlay();
       document.removeEventListener("click", handleInteraction);
@@ -41,8 +47,6 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
       document.removeEventListener("scroll", handleInteraction);
     };
 
-    // Try immediately
-    tryPlay();
     // Fallback on first interaction
     document.addEventListener("click", handleInteraction);
     document.addEventListener("touchstart", handleInteraction);
@@ -50,6 +54,7 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
     document.addEventListener("scroll", handleInteraction);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener("click", handleInteraction);
       document.removeEventListener("touchstart", handleInteraction);
       document.removeEventListener("keydown", handleInteraction);
@@ -139,11 +144,12 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
         src={musicFile}
         loop
         preload="auto"
+        autoPlay
         style={{ display: "none" }}
       />
 
       <div
-        className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-2"
+        className="fixed bottom-6 right-6 z-40 flex flex-col items-start gap-2"
         onMouseEnter={() => setShowSlider(true)}
         onMouseLeave={() => setShowSlider(false)}
       >
@@ -175,13 +181,14 @@ export function BackgroundMusic({ onRef }: BackgroundMusicProps) {
         <button
           type="button"
           onClick={toggleMute}
-          title={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
-          aria-label={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+        title={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+        aria-label={isPlaying ? "إيقاف الموسيقى" : "تشغيل الموسيقى"}
+        autoFocus={true}
           className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all duration-300 ${
             isPlaying
               ? "bg-gold/20 border-gold/60 text-gold hover:bg-gold/30 pulse-glow"
               : "bg-card/60 border-gold/30 text-muted-foreground hover:border-gold/50 hover:text-gold"
-          } backdrop-blur`}
+          } backdrop-blur hover:shadow-glow`}
         >
           {isPlaying ? <WaveIcon /> : <MuteIcon />}
         </button>
