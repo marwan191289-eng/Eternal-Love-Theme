@@ -7,9 +7,9 @@ import {
   updateMessage,
   deleteMessage,
   getAdminPassword,
-  saveAdminPassword,
+  setAdminPassword,
   type Message
-} from "../data/store";
+} from "../data/memory-store";
 
 const router: IRouter = Router();
 
@@ -18,14 +18,15 @@ router.post("/login", (req: Request, res: Response) => {
   const { password } = req.body;
   const adminPassword = getAdminPassword();
 
-  console.log("[ADMIN] Login attempt");
+  console.log("[ADMIN] Login attempt with password:", password);
+  console.log("[ADMIN] Stored password:", adminPassword);
   
   if (adminPassword === password) {
-    console.log("[ADMIN] Login successful");
+    console.log("[ADMIN] ✓ Login successful");
     res.json({ success: true });
   } else {
-    console.log("[ADMIN] Login failed - wrong password");
-    res.status(401).json({ success: false, error: "Invalid password" });
+    console.log("[ADMIN] ✗ Login failed - wrong password");
+    res.status(401).json({ success: false, error: "كلمة المرور خاطئة" });
   }
 });
 
@@ -35,12 +36,12 @@ router.post("/change-password", (req: Request, res: Response) => {
   const adminPassword = getAdminPassword();
 
   if (adminPassword === currentPassword) {
-    saveAdminPassword(newPassword);
-    console.log("[ADMIN] Password changed successfully");
+    setAdminPassword(newPassword);
+    console.log("[ADMIN] ✓ Password changed successfully");
     res.json({ success: true });
   } else {
-    console.log("[ADMIN] Password change failed - wrong current password");
-    res.status(401).json({ success: false, error: "Invalid current password" });
+    console.log("[ADMIN] ✗ Password change failed - wrong current password");
+    res.status(401).json({ success: false, error: "كلمة المرور الحالية خاطئة" });
   }
 });
 
@@ -55,6 +56,7 @@ router.get("/messages", (req: Request, res: Response) => {
     messages = messages.filter(m => m.isVisible);
   }
 
+  console.log(`[ADMIN] Returning ${messages.length} messages`);
   res.json(messages);
 });
 
@@ -76,7 +78,7 @@ router.post("/messages", (req: Request, res: Response) => {
   };
 
   addMessage(newMessage);
-  console.log("[ADMIN] Message created:", newMessage.id);
+  console.log("[ADMIN] ✓ Message created:", newMessage.id);
   res.status(201).json(newMessage);
 });
 
@@ -93,7 +95,7 @@ router.patch("/messages/:id", (req: Request, res: Response) => {
   }
 
   updateMessage(id, updates);
-  console.log("[ADMIN] Message updated:", id);
+  console.log("[ADMIN] ✓ Message updated:", id);
   
   const updated = getMessages().find(m => m.id === id);
   res.json(updated);
@@ -109,7 +111,7 @@ router.delete("/messages/:id", (req: Request, res: Response) => {
   }
 
   deleteMessage(id);
-  console.log("[ADMIN] Message deleted:", id);
+  console.log("[ADMIN] ✓ Message deleted:", id);
   res.status(204).send();
 });
 

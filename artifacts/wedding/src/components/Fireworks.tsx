@@ -7,7 +7,7 @@ export function Fireworks() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     canvas.width = window.innerWidth;
@@ -19,32 +19,37 @@ export function Fireworks() {
       vx: number;
       vy: number;
       life: number;
+      maxLife: number;
       color: string;
       size: number;
+      brightness: number;
     }
 
     const particles: Particle[] = [];
 
-    // Professional color schemes
+    // Professional wedding color palette
     const colorSchemes = [
-      ['#FFD700', '#FFA500', '#FF8C00'],
-      ['#FF1493', '#FF69B4', '#FFB6C1'],
-      ['#00CED1', '#00BFFF', '#87CEEB'],
-      ['#32CD32', '#00FF00', '#90EE90'],
-      ['#9370DB', '#BA55D3', '#DA70D6'],
-      ['#FFE4E1', '#FFDAB9', '#FFD700'],
-      ['#FF6347', '#FF4500', '#FF8C00'],
-      ['#20B2AA', '#48D1CC', '#00CED1'],
+      { main: '#FFD700', accent: '#FFA500', bright: '#FFFF00' },     // Gold
+      { main: '#FF1493', accent: '#FF69B4', bright: '#FFB6C1' },     // Pink
+      { main: '#00CED1', accent: '#00BFFF', bright: '#87CEEB' },     // Cyan
+      { main: '#32CD32', accent: '#00FF00', bright: '#90EE90' },     // Green
+      { main: '#9370DB', accent: '#BA55D3', bright: '#DA70D6' },     // Purple
+      { main: '#FF6347', accent: '#FF4500', bright: '#FF8C00' },     // Red-Orange
+      { main: '#20B2AA', accent: '#48D1CC', bright: '#00CED1' },     // Teal
+      { main: '#FFE4E1', accent: '#FFDAB9', bright: '#FFD700' },     // Peach
     ];
 
     function createExplosion(x: number, y: number) {
       const scheme = colorSchemes[Math.floor(Math.random() * colorSchemes.length)];
-      const particleCount = 150 + Math.random() * 200;
+      const particleCount = 200 + Math.random() * 300;
 
       for (let i = 0; i < particleCount; i++) {
-        const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 1.2;
-        const velocity = 2 + Math.random() * 10;
-        const color = scheme[Math.floor(Math.random() * scheme.length)];
+        const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 1.5;
+        const velocity = 1 + Math.random() * 12;
+        
+        // Mix colors
+        const colors = [scheme.main, scheme.accent, scheme.bright];
+        const color = colors[Math.floor(Math.random() * colors.length)];
 
         particles.push({
           x,
@@ -52,16 +57,49 @@ export function Fireworks() {
           vx: Math.cos(angle) * velocity,
           vy: Math.sin(angle) * velocity,
           life: 1,
+          maxLife: 1,
           color,
-          size: 2 + Math.random() * 4,
+          size: 1.5 + Math.random() * 5,
+          brightness: 1 + Math.random() * 0.5,
         });
       }
     }
 
+    function drawParticle(p: Particle) {
+      const alpha = Math.pow(p.life, 1.8);
+      
+      // Draw outer glow
+      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+      gradient.addColorStop(0, p.color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+      gradient.addColorStop(0.5, p.color + Math.floor(alpha * 128).toString(16).padStart(2, '0'));
+      gradient.addColorStop(1, p.color + '00');
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw bright core
+      ctx.globalAlpha = Math.pow(p.life, 2.5) * 0.9;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw main particle
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     function animate() {
-      // Fade effect
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+      // Fade background
+      ctx.fillStyle = 'rgba(10, 10, 10, 0.03)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.globalAlpha = 1;
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -69,56 +107,39 @@ export function Fireworks() {
         // Physics
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.2; // gravity
-        p.vx *= 0.99; // friction
-        p.life -= 0.006;
+        p.vy += 0.25; // gravity
+        p.vx *= 0.98; // air resistance
+        p.life -= 0.005;
 
         if (p.life <= 0) {
           particles.splice(i, 1);
           continue;
         }
 
-        // Draw particle with glow
-        ctx.globalAlpha = Math.pow(p.life, 1.5);
-
-        // Outer glow
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 20;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner bright core
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.globalAlpha = Math.pow(p.life, 2) * 0.8;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+        drawParticle(p);
       }
 
       ctx.globalAlpha = 1;
-      ctx.shadowBlur = 0;
     }
 
-    // Timing
+    // Animation loop
     let startTime = Date.now();
     const duration = 5000;
-    let burstCount = 0;
+    let lastBurst = 0;
 
     const animationLoop = () => {
       const elapsed = Date.now() - startTime;
 
       if (elapsed < duration) {
         // Create bursts at intervals
-        if (elapsed % 400 < 50) {
-          const numBursts = 1 + Math.floor(Math.random() * 2);
+        if (elapsed - lastBurst > 300) {
+          const numBursts = 1 + Math.floor(Math.random() * 3);
           for (let i = 0; i < numBursts; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * (canvas.height * 0.6);
+            const x = 100 + Math.random() * (canvas.width - 200);
+            const y = 100 + Math.random() * (canvas.height * 0.5);
             createExplosion(x, y);
           }
+          lastBurst = elapsed;
         }
 
         animate();
