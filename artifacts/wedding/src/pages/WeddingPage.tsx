@@ -36,10 +36,61 @@ import {
   deleteMedia,
   updateMedia,
   mediaUrl,
-  videoStreamUrl,
+  resolveVideoUrl,
   isUnlocked,
   lock,
 } from "@/lib/media";
+
+// ─── Video player — defined outside parent to keep stable identity ────────────
+function VideoPlayer({
+  objectPath,
+  onPlay,
+  onPause,
+}: {
+  objectPath: string;
+  onPlay: (v: HTMLVideoElement) => void;
+  onPause: (v: HTMLVideoElement) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [err, setErr] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    resolveVideoUrl(objectPath)
+      .then((url) => { if (!cancelled) setSrc(url); })
+      .catch(() => { if (!cancelled) setErr(true); });
+    return () => { cancelled = true; };
+  }, [objectPath]);
+
+  if (err) {
+    return (
+      <div className="flex h-full w-full items-center justify-center text-muted-foreground font-body-ar text-sm">
+        تعذّر تحميل الفيديو
+      </div>
+    );
+  }
+  if (!src) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+  return (
+    <video
+      ref={videoRef}
+      controls
+      className="h-full w-full"
+      preload="metadata"
+      playsInline
+      src={src}
+      onPlay={() => videoRef.current && onPlay(videoRef.current)}
+      onPause={() => videoRef.current && onPause(videoRef.current)}
+      onEnded={() => videoRef.current && onPause(videoRef.current)}
+    />
+  );
+}
 
 // ─── Seed images ──────────────────────────────────────────────────────────────
 const seedImages = [
@@ -189,25 +240,6 @@ export function WeddingPage() {
 
   const uploadedImages = visibleMedia.filter((m) => m.type === "image");
   const uploadedVideos = visibleMedia.filter((m) => m.type === "video");
-
-  // Video player with music integration — uses signed GCS redirect for native Range support
-  function VideoPlayer({ objectPath }: { objectPath: string }) {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const src = videoStreamUrl(objectPath);
-    return (
-      <video
-        ref={videoRef}
-        controls
-        className="h-full w-full"
-        preload="metadata"
-        playsInline
-        src={src}
-        onPlay={() => videoRef.current && handleVideoPlay(videoRef.current)}
-        onPause={() => videoRef.current && handleVideoPause(videoRef.current)}
-        onEnded={() => videoRef.current && handleVideoPause(videoRef.current)}
-      />
-    );
-  }
 
   return (
     <div className="relative min-h-screen text-foreground overflow-x-hidden" dir="rtl">
@@ -479,7 +511,11 @@ export function WeddingPage() {
               <Reveal key={v.id} delay={i * 0.1}>
                 <figure className="overflow-hidden rounded-3xl border-2 border-gold/35 shadow-elegant">
                   <div className="aspect-video bg-background/80">
-                    <VideoPlayer objectPath={v.objectPath} />
+                    <VideoPlayer
+                      objectPath={v.objectPath}
+                      onPlay={handleVideoPlay}
+                      onPause={handleVideoPause}
+                    />
                   </div>
                   <figcaption className="glass border-t border-gold/20 px-6 py-4 text-center">
                     <p className="font-display-ar text-base text-gold">{v.caption ?? "ذكرى من العرس"}</p>

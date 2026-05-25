@@ -95,8 +95,19 @@ export function mediaUrl(objectPath: string): string {
   return `/api/storage${objectPath}`;
 }
 
-export function videoStreamUrl(objectPath: string): string {
-  return `/api/storage${objectPath}/redirect`;
+// Cache signed URLs client-side so remounts don't hit the server again
+const signedUrlCache = new Map<string, string>();
+
+export async function resolveVideoUrl(objectPath: string): Promise<string> {
+  const cached = signedUrlCache.get(objectPath);
+  if (cached) return cached;
+  const r = await fetch(`/api/storage${objectPath}/signed-url`);
+  if (!r.ok) throw new Error("Failed to get signed URL");
+  const { url } = (await r.json()) as { url: string };
+  signedUrlCache.set(objectPath, url);
+  // Signed URLs expire in 1 hour — evict cache entry 5 min early
+  setTimeout(() => signedUrlCache.delete(objectPath), 55 * 60 * 1000);
+  return url;
 }
 
 const STORAGE_KEY = "wedding_unlocked";

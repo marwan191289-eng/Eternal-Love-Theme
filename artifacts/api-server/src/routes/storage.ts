@@ -78,25 +78,26 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 });
 
 /**
- * GET /storage/objects/*path/redirect
+ * GET /storage/objects/*path/signed-url
  *
- * Returns a 302 redirect to a short-lived signed GCS URL.
- * Use this for video elements — GCS natively supports Range requests so
- * the browser can seek/buffer without proxying through the server.
+ * Returns a JSON { url } with a short-lived signed GCS URL.
+ * The client uses this URL directly as the video src so ALL requests
+ * (including Range requests) go straight to GCS — no proxy, no re-redirect.
  */
-router.get("/storage/objects/*path/redirect", async (req: Request, res: Response) => {
+router.get("/storage/objects/*path/signed-url", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
-    const signedURL = await objectStorageService.getObjectEntitySignedReadURL(objectPath);
-    res.redirect(302, signedURL);
+    const url = await objectStorageService.getObjectEntitySignedReadURL(objectPath);
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ url });
   } catch (error) {
     if (error instanceof ObjectNotFoundError) {
       res.status(404).json({ error: "Object not found" });
       return;
     }
-    req.log.error({ err: error }, "Error generating signed URL for redirect");
+    req.log.error({ err: error }, "Error generating signed URL");
     res.status(500).json({ error: "Failed to generate signed URL" });
   }
 });
