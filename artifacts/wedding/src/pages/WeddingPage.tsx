@@ -37,17 +37,19 @@ import {
   updateMedia,
   mediaUrl,
   resolveVideoUrl,
+  buildEmbedUrl,
+  isExternalEmbedUrl,
   isUnlocked,
   lock,
 } from "@/lib/media";
 
 // ─── Video player — defined outside parent to keep stable identity ────────────
 function VideoPlayer({
-  objectPath,
+  item,
   onPlay,
   onPause,
 }: {
-  objectPath: string;
+  item: { objectPath: string; externalUrl?: string | null };
   onPlay: (v: HTMLVideoElement) => void;
   onPause: (v: HTMLVideoElement) => void;
 }) {
@@ -55,13 +57,27 @@ function VideoPlayer({
   const [src, setSrc] = useState<string | null>(null);
   const [err, setErr] = useState(false);
 
+  const externalUrl = item.externalUrl ?? null;
+  const objectPath = item.objectPath;
+
   useEffect(() => {
+    // External URL (YouTube / Vimeo / Drive / direct): no GCS fetch needed
+    if (externalUrl) {
+      if (isExternalEmbedUrl(externalUrl)) {
+        setSrc(buildEmbedUrl(externalUrl));
+      } else {
+        setSrc(externalUrl); // direct mp4/webm
+      }
+      return;
+    }
+    // GCS uploaded video — resolve signed URL once
+    if (!objectPath) return;
     let cancelled = false;
     resolveVideoUrl(objectPath)
       .then((url) => { if (!cancelled) setSrc(url); })
       .catch(() => { if (!cancelled) setErr(true); });
     return () => { cancelled = true; };
-  }, [objectPath]);
+  }, [externalUrl, objectPath]);
 
   if (err) {
     return (
@@ -77,6 +93,21 @@ function VideoPlayer({
       </div>
     );
   }
+
+  // Embed iframe for YouTube / Vimeo / Google Drive
+  if (externalUrl && isExternalEmbedUrl(externalUrl)) {
+    return (
+      <iframe
+        src={src}
+        className="h-full w-full"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        title="فيديو"
+      />
+    );
+  }
+
+  // Native video for GCS uploads and direct links
   return (
     <video
       ref={videoRef}
@@ -512,7 +543,7 @@ export function WeddingPage() {
                 <figure className="overflow-hidden rounded-3xl border-2 border-gold/35 shadow-elegant">
                   <div className="aspect-video bg-background/80">
                     <VideoPlayer
-                      objectPath={v.objectPath}
+                      item={v}
                       onPlay={handleVideoPlay}
                       onPause={handleVideoPause}
                     />

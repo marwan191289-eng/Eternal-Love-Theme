@@ -1,6 +1,7 @@
 export type MediaItem = {
   id: string;
   objectPath: string;
+  externalUrl: string | null;
   type: "image" | "video";
   caption: string | null;
   uploader: string | null;
@@ -18,6 +19,7 @@ export async function fetchMedia(): Promise<MediaItem[]> {
 
 export async function createMedia(body: {
   objectPath: string;
+  externalUrl?: string | null;
   type: "image" | "video";
   caption?: string | null;
   uploader?: string | null;
@@ -54,7 +56,6 @@ export async function uploadFile(
   file: File,
   onProgress?: (pct: number) => void
 ): Promise<string> {
-  // Step 1: request presigned URL
   const res = await fetch(`${BASE}/storage/uploads/request-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -70,7 +71,6 @@ export async function uploadFile(
     objectPath: string;
   };
 
-  // Step 2: upload directly to GCS
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadURL);
@@ -95,7 +95,7 @@ export function mediaUrl(objectPath: string): string {
   return `/api/storage${objectPath}`;
 }
 
-// Cache signed URLs client-side so remounts don't hit the server again
+// ─── Signed URL (for uploaded GCS videos) ────────────────────────────────────
 const signedUrlCache = new Map<string, string>();
 
 export async function resolveVideoUrl(objectPath: string): Promise<string> {
@@ -105,11 +105,55 @@ export async function resolveVideoUrl(objectPath: string): Promise<string> {
   if (!r.ok) throw new Error("Failed to get signed URL");
   const { url } = (await r.json()) as { url: string };
   signedUrlCache.set(objectPath, url);
-  // Signed URLs expire in 1 hour — evict cache entry 5 min early
   setTimeout(() => signedUrlCache.delete(objectPath), 55 * 60 * 1000);
   return url;
 }
 
+// ─── External URL helpers ─────────────────────────────────────────────────────
+
+export type EmbedKind = "youtube" | "vimeo" | "gdrive" | "direct";
+
+export function detectEmbedKind(url: string): EmbedKind {
+  if (/youtu\.be\/|youtube\.com/.test(url)) return "youtube";
+  if (/vimeo\.com/.test(url)) return "vimeo";
+  if (/drive\.google\.com/.test(url)) return "gdrive";
+  return "direct";
+}
+
+export function buildEmbedUrl(raw: string): string {
+  const kind = detectEmbedKind(raw);
+
+  if (kind === "youtube") {
+    // Handles watch?v=, youtu.be/, /embed/, /shorts/
+    const m =
+      raw.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{11})/) ??
+      raw.match(/([A-Za-z0-9_-]{11})/);
+    const id = m?.[1] ?? "";
+    return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+  }
+
+  if (kind === "vimeo") {
+    const m = raw.match(/vimeo\.com\/(\d+)/);
+    const id = m?.[1] ?? "";
+    return `https://player.vimeo.com/video/${id}?byline=0&portrait=0`;
+  }
+
+  if (kind === "gdrive") {
+    // https://drive.google.com/file/d/FILE_ID/view  →  /preview
+    const m = raw.match(/\/d\/([^/]+)/);
+    const id = m?.[1] ?? "";
+    return `https://drive.google.com/file/d/${id}/preview`;
+  }
+
+  return raw; // direct mp4 / webm etc.
+}
+
+export function isExternalEmbedUrl(url: string): boolean {
+  const kind = detectEmbedKind(url);
+  return kind === "youtube" || kind === "vimeo" || kind === "gdrive";
+}
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
 const STORAGE_KEY = "wedding_unlocked";
 const PASSWORD = "Amira14052026";
 

@@ -11,6 +11,7 @@ const DATA_FILE = join(process.cwd(), "media-store.json");
 type MediaItem = {
   id: string;
   objectPath: string;
+  externalUrl: string | null;
   type: "image" | "video";
   caption: string | null;
   uploader: string | null;
@@ -33,6 +34,7 @@ function writeStore(items: MediaItem[]) {
 
 const CreateMediaBody = z.object({
   objectPath: z.string(),
+  externalUrl: z.string().nullable().optional(),
   type: z.enum(["image", "video"]),
   caption: z.string().nullable().optional(),
   uploader: z.string().nullable().optional(),
@@ -57,10 +59,11 @@ router.post("/media", (req: Request, res: Response) => {
     res.status(400).json({ error: "Invalid request body" });
     return;
   }
-  const { objectPath, type, caption, uploader, visibility } = parsed.data;
+  const { objectPath, externalUrl, type, caption, uploader, visibility } = parsed.data;
   const item: MediaItem = {
     id: randomUUID(),
     objectPath,
+    externalUrl: externalUrl ?? null,
     type,
     caption: caption ?? null,
     uploader: uploader ?? null,
