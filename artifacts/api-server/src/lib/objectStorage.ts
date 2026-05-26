@@ -11,23 +11,39 @@ import {
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
+let storageOptions: any = {};
+
+if (process.env.GCS_SERVICE_ACCOUNT) {
+  try {
+    const creds = JSON.parse(process.env.GCS_SERVICE_ACCOUNT);
+    storageOptions = {
+      projectId: process.env.GCS_PROJECT_ID || creds.project_id,
+      credentials: creds,
+    };
+  } catch (err) {
+    storageOptions = { projectId: process.env.GCS_PROJECT_ID || "" };
+  }
+} else {
+  storageOptions = {
+    credentials: {
+      audience: "replit",
+      subject_token_type: "access_token",
+      token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+      type: "external_account",
+      credential_source: {
+        url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+        format: {
+          type: "json",
+          subject_token_field_name: "access_token",
+        },
       },
+      universe_domain: "googleapis.com",
     },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
-});
+    projectId: "",
+  };
+}
+
+export const objectStorageClient = new Storage(storageOptions);
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -247,6 +263,17 @@ async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
+  // If a GCS service account is configured, sign using the @google-cloud/storage method.
+  if (process.env.GCS_SERVICE_ACCOUNT) {
+    const bucket = objectStorageClient.bucket(bucketName);
+    const action = method === "GET" ? "read" : method === "PUT" ? "write" : method === "DELETE" ? "delete" : "read";
+    const [url] = await bucket.file(objectName).getSignedUrl({
+      action: action as any,
+      expires: Date.now() + ttlSec * 1000,
+    });
+    return url;
+  }
+
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
@@ -267,8 +294,7 @@ async function signObjectURL({
   if (!response.ok) {
     throw new Error(
       `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
-    );
+        `make sure you're running on Replit or provide GCS_SERVICE_ACCOUNT`);
   }
 
   const { signed_url: signedURL } = await response.json();

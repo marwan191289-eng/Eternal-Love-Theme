@@ -32642,23 +32642,37 @@ async function canAccessObject({
 
 // src/lib/objectStorage.ts
 var REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
-var objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token"
-      }
+var storageOptions = {};
+if (process.env.GCS_SERVICE_ACCOUNT) {
+  try {
+    const creds = JSON.parse(process.env.GCS_SERVICE_ACCOUNT);
+    storageOptions = {
+      projectId: process.env.GCS_PROJECT_ID || creds.project_id,
+      credentials: creds
+    };
+  } catch (err) {
+    storageOptions = { projectId: process.env.GCS_PROJECT_ID || "" };
+  }
+} else {
+  storageOptions = {
+    credentials: {
+      audience: "replit",
+      subject_token_type: "access_token",
+      token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+      type: "external_account",
+      credential_source: {
+        url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+        format: {
+          type: "json",
+          subject_token_field_name: "access_token"
+        }
+      },
+      universe_domain: "googleapis.com"
     },
-    universe_domain: "googleapis.com"
-  },
-  projectId: ""
-});
+    projectId: ""
+  };
+}
+var objectStorageClient = new Storage(storageOptions);
 var ObjectNotFoundError = class _ObjectNotFoundError extends Error {
   constructor() {
     super("Object not found");
@@ -32826,6 +32840,15 @@ async function signObjectURL({
   method,
   ttlSec
 }) {
+  if (process.env.GCS_SERVICE_ACCOUNT) {
+    const bucket = objectStorageClient.bucket(bucketName);
+    const action = method === "GET" ? "read" : method === "PUT" ? "write" : method === "DELETE" ? "delete" : "read";
+    const [url] = await bucket.file(objectName).getSignedUrl({
+      action,
+      expires: Date.now() + ttlSec * 1e3
+    });
+    return url;
+  }
   const request = {
     bucket_name: bucketName,
     object_name: objectName,
@@ -32845,7 +32868,7 @@ async function signObjectURL({
   );
   if (!response.ok) {
     throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, make sure you're running on Replit`
+      `Failed to sign object URL, errorcode: ${response.status}, make sure you're running on Replit or provide GCS_SERVICE_ACCOUNT`
     );
   }
   const { signed_url: signedURL } = await response.json();
