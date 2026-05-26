@@ -10,7 +10,7 @@ interface MediaItem {
 
 let MEDIA_STORE: MediaItem[] = [];
 
-export default function handler(req, res) {
+export default function handler(req: { method: string; body: Record<string, any> }, res: any) {
   if (req.method === "GET") {
     const items = [...MEDIA_STORE].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
