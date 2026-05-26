@@ -5,15 +5,15 @@ export const config = {
 type MediaItem = {
   id: string;
   objectPath: string;
-  type: "image" | "video";
-  visibility: "public" | "private";
+  type: string;
+  visibility: string;
   createdAt: string;
 };
 
 let MEDIA_STORE: MediaItem[] = [];
 
 export default async function handler(req: Request): Promise<Response> {
-  const { method } = req;
+  const method = req.method;
 
   if (method === "GET") {
     const items = [...MEDIA_STORE].sort(
@@ -37,7 +37,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     const item: MediaItem = {
-      id: crypto.randomUUID(),
+      id: globalThis.crypto.randomUUID(), // ✅ الحل هنا
       objectPath,
       type,
       visibility,
