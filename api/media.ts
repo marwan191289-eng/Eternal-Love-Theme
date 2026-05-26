@@ -1,24 +1,35 @@
-import { randomUUID } from "crypto";
+export const config = {
+  runtime: "edge",
+};
 
 let MEDIA_STORE = [];
 
-export default function handler(req, res) {
-  if (req.method === "GET") {
+export default async function handler(req) {
+  const { method } = req;
+
+  if (method === "GET") {
     const items = [...MEDIA_STORE].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-    return res.status(200).json(items);
+    return new Response(JSON.stringify(items), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  if (req.method === "POST") {
-    const { objectPath, type, visibility } = req.body;
+  if (method === "POST") {
+    const body = await req.json();
+    const { objectPath, type, visibility } = body;
 
     if (!objectPath || !type || !visibility) {
-      return res.status(400).json({ error: "Invalid request body" });
+      return new Response(JSON.stringify({ error: "Invalid request body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const item = {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       objectPath,
       type,
       visibility,
@@ -26,8 +37,15 @@ export default function handler(req, res) {
     };
 
     MEDIA_STORE.unshift(item);
-    return res.status(201).json(item);
+
+    return new Response(JSON.stringify(item), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  return res.status(405).json({ error: "Method Not Allowed" });
+  return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+    status: 405,
+    headers: { "Content-Type": "application/json" },
+  });
 }
