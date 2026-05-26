@@ -2,7 +2,8 @@ export const config = {
   runtime: "edge",
 };
 
-// ✅ تعريف نوع البيانات
+const JSON_HEADERS = { "Content-Type": "application/json" };
+
 interface MediaItem {
   id: string;
   objectPath: string;
@@ -11,10 +12,37 @@ interface MediaItem {
   createdAt: string;
 }
 
-// ✅ تعريف المتغير مع النوع
+interface CreateMediaBody {
+  objectPath: string;
+  type: string;
+  visibility: string;
+}
+
 let MEDIA_STORE: MediaItem[] = [];
 
-// ✅ تعريف الأنواع لـ req و Response
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: JSON_HEADERS,
+  });
+}
+
+function isCreateMediaBody(body: unknown): body is CreateMediaBody {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+
+  const candidate = body as Record<string, unknown>;
+  return (
+    typeof candidate.objectPath === "string" &&
+    candidate.objectPath.length > 0 &&
+    typeof candidate.type === "string" &&
+    candidate.type.length > 0 &&
+    typeof candidate.visibility === "string" &&
+    candidate.visibility.length > 0
+  );
+}
+
 export default async function handler(req: Request): Promise<Response> {
   const method = req.method;
 
@@ -22,42 +50,34 @@ export default async function handler(req: Request): Promise<Response> {
     const items = [...MEDIA_STORE].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
-    return new Response(JSON.stringify(items), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse(items, 200);
   }
 
   if (method === "POST") {
-    const body = await req.json();
-    const { objectPath, type, visibility } = body;
+    let body: unknown;
 
-    if (!objectPath || !type || !visibility) {
-      return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse({ error: "Invalid JSON body" }, 400);
     }
 
-    // ✅ استخدام crypto من globalThis
+    if (!isCreateMediaBody(body)) {
+      return jsonResponse({ error: "Invalid request body" }, 400);
+    }
+
     const item: MediaItem = {
-      id: globalThis.crypto.randomUUID(),
-      objectPath,
-      type,
-      visibility,
+      id: crypto.randomUUID(),
+      objectPath: body.objectPath,
+      type: body.type,
+      visibility: body.visibility,
       createdAt: new Date().toISOString(),
     };
 
     MEDIA_STORE.unshift(item);
 
-    return new Response(JSON.stringify(item), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse(item, 201);
   }
 
-  return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-    status: 405,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonResponse({ error: "Method Not Allowed" }, 405);
 }
