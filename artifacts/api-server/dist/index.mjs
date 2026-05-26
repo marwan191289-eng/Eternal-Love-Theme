@@ -33276,6 +33276,9 @@ app.use((0, import_cors.default)());
 app.use(import_express6.default.json());
 app.use(import_express6.default.urlencoded({ extended: true }));
 app.use("/api", routes_default);
+app.get("/", (_req, res) => {
+  res.json({ status: "ok" });
+});
 var app_default = app;
 
 // src/index.ts

@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "echo skipping",
-    "build": "pnpm -r --filter @workspace/wedding run build",
+    "build": "pnpm -r --filter @workspace/wedding --filter @workspace/api-server run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
