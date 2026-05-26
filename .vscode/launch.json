@@ -5,22 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Vercel",
             "type": "node",
             "request": "launch",
+            "name": "Run vercel",
             "runtimeExecutable": "vercel",
             "cwd": "${workspaceFolder}/.vercel-cli",
             "args": []
-        },
-        {
-            "name": "Vercel Dev",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "vercel",
-            "cwd": "${workspaceFolder}/.vercel-cli",
-            "args": [
-                "dev"
-            ]
         },
         {
             "name": "Python Debugger: Current File",
