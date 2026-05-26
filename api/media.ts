@@ -2,9 +2,17 @@ export const config = {
   runtime: "edge",
 };
 
-let MEDIA_STORE = [];
+type MediaItem = {
+  id: string;
+  objectPath: string;
+  type: "image" | "video";
+  visibility: "public" | "private";
+  createdAt: string;
+};
 
-export default async function handler(req) {
+let MEDIA_STORE: MediaItem[] = [];
+
+export default async function handler(req: Request): Promise<Response> {
   const { method } = req;
 
   if (method === "GET") {
@@ -28,7 +36,7 @@ export default async function handler(req) {
       });
     }
 
-    const item = {
+    const item: MediaItem = {
       id: crypto.randomUUID(),
       objectPath,
       type,
