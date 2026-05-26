@@ -297,6 +297,6 @@ async function signObjectURL({
         `make sure you're running on Replit or provide GCS_SERVICE_ACCOUNT`);
   }
 
-  const { signed_url: signedURL } = await response.json();
+  const { signed_url: signedURL } = (await response.json()) as { signed_url: string };
   return signedURL;
 }

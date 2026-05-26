@@ -79,12 +79,15 @@ router.post("/messages", (req: Request, res: Response) => {
 
   addMessage(newMessage);
   console.log("[ADMIN] ✓ Message created:", newMessage.id);
-  res.status(201).json(newMessage);
+  return res.status(201).json(newMessage);
 });
 
 // Update message
 router.patch("/messages/:id", (req: Request, res: Response) => {
   const { id } = req.params;
+  if (typeof id !== "string") {
+    return res.status(400).json({ error: "Invalid ID" });
+  }
   const updates = req.body;
 
   const messages = getMessages();
@@ -98,12 +101,15 @@ router.patch("/messages/:id", (req: Request, res: Response) => {
   console.log("[ADMIN] ✓ Message updated:", id);
   
   const updated = getMessages().find(m => m.id === id);
-  res.json(updated);
+  return res.json(updated);
 });
 
 // Delete message
 router.delete("/messages/:id", (req: Request, res: Response) => {
   const { id } = req.params;
+  if (typeof id !== "string") {
+    return res.status(400).json({ error: "Invalid ID" });
+  }
 
   const messages = getMessages();
   if (!messages.find(m => m.id === id)) {
@@ -112,7 +118,7 @@ router.delete("/messages/:id", (req: Request, res: Response) => {
 
   deleteMessage(id);
   console.log("[ADMIN] ✓ Message deleted:", id);
-  res.status(204).send();
+  return res.status(204).send();
 });
 
 export default router;

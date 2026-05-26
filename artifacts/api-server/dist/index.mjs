@@ -28450,6 +28450,9 @@ var require_logger = __commonJS({
   }
 });
 
+// src/index.ts
+import { fileURLToPath } from "node:url";
+
 // src/app.ts
 var import_express6 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
@@ -33189,10 +33192,13 @@ router4.post("/messages", (req, res) => {
   };
   addMessage(newMessage);
   console.log("[ADMIN] \u2713 Message created:", newMessage.id);
-  res.status(201).json(newMessage);
+  return res.status(201).json(newMessage);
 });
 router4.patch("/messages/:id", (req, res) => {
   const { id } = req.params;
+  if (typeof id !== "string") {
+    return res.status(400).json({ error: "Invalid ID" });
+  }
   const updates = req.body;
   const messages = getMessages();
   const message = messages.find((m) => m.id === id);
@@ -33202,17 +33208,20 @@ router4.patch("/messages/:id", (req, res) => {
   updateMessage(id, updates);
   console.log("[ADMIN] \u2713 Message updated:", id);
   const updated = getMessages().find((m) => m.id === id);
-  res.json(updated);
+  return res.json(updated);
 });
 router4.delete("/messages/:id", (req, res) => {
   const { id } = req.params;
+  if (typeof id !== "string") {
+    return res.status(400).json({ error: "Invalid ID" });
+  }
   const messages = getMessages();
   if (!messages.find((m) => m.id === id)) {
     return res.status(404).json({ error: "Message not found" });
   }
   deleteMessage(id);
   console.log("[ADMIN] \u2713 Message deleted:", id);
-  res.status(204).send();
+  return res.status(204).send();
 });
 var admin_default = router4;
 
@@ -33270,23 +33279,31 @@ app.use("/api", routes_default);
 var app_default = app;
 
 // src/index.ts
-var rawPort = process.env["PORT"];
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided."
-  );
-}
-var port = Number(rawPort);
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-app_default.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
+var src_default = app_default;
+var currentFile = fileURLToPath(import.meta.url);
+var isExecutedDirectly = process.argv[1] === currentFile;
+if (isExecutedDirectly) {
+  const rawPort = process.env["PORT"];
+  if (!rawPort) {
+    throw new Error(
+      "PORT environment variable is required but was not provided."
+    );
   }
-  logger.info({ port }, "Server listening");
-});
+  const port = Number(rawPort);
+  if (Number.isNaN(port) || port <= 0) {
+    throw new Error(`Invalid PORT value: "${rawPort}"`);
+  }
+  app_default.listen(port, (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
+    logger.info({ port }, "Server listening");
+  });
+}
+export {
+  src_default as default
+};
 /*! Bundled license information:
 
 depd/index.js:
