@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import type { Request, Response } from "express";
 
 interface MediaItem {
   id: string;
@@ -8,9 +9,31 @@ interface MediaItem {
   createdAt: string;
 }
 
+interface CreateMediaBody {
+  objectPath: string;
+  type: string;
+  visibility: string;
+}
+
 let MEDIA_STORE: MediaItem[] = [];
 
-export default function handler(req: { method: string; body: Record<string, any> }, res: any) {
+function isCreateMediaBody(body: unknown): body is CreateMediaBody {
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+
+  const candidate = body as Record<string, unknown>;
+  return (
+    typeof candidate.objectPath === "string" &&
+    candidate.objectPath.length > 0 &&
+    typeof candidate.type === "string" &&
+    candidate.type.length > 0 &&
+    typeof candidate.visibility === "string" &&
+    candidate.visibility.length > 0
+  );
+}
+
+export default function handler(req: Request, res: Response) {
   if (req.method === "GET") {
     const items = [...MEDIA_STORE].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -19,17 +42,15 @@ export default function handler(req: { method: string; body: Record<string, any>
   }
 
   if (req.method === "POST") {
-    const { objectPath, type, visibility } = req.body;
-
-    if (!objectPath || !type || !visibility) {
+    if (!isCreateMediaBody(req.body)) {
       return res.status(400).json({ error: "Invalid request body" });
     }
 
-    const item = {
+    const item: MediaItem = {
       id: randomUUID(),
-      objectPath,
-      type,
-      visibility,
+      objectPath: req.body.objectPath,
+      type: req.body.type,
+      visibility: req.body.visibility,
       createdAt: new Date().toISOString(),
     };
 

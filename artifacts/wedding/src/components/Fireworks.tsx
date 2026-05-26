@@ -10,8 +10,11 @@ export function Fireworks() {
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const canvasElement = canvas;
+    const context = ctx;
+
+    canvasElement.width = window.innerWidth;
+    canvasElement.height = window.innerHeight;
 
     interface Particle {
       x: number;
@@ -69,37 +72,37 @@ export function Fireworks() {
       const alpha = Math.pow(p.life, 1.8);
       
       // Draw outer glow
-      const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+      const gradient = context.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
       gradient.addColorStop(0, p.color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
       gradient.addColorStop(0.5, p.color + Math.floor(alpha * 128).toString(16).padStart(2, '0'));
       gradient.addColorStop(1, p.color + '00');
       
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+      context.fill();
 
       // Draw bright core
-      ctx.globalAlpha = Math.pow(p.life, 2.5) * 0.9;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
-      ctx.fill();
+      context.globalAlpha = Math.pow(p.life, 2.5) * 0.9;
+      context.fillStyle = '#FFFFFF';
+      context.beginPath();
+      context.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+      context.fill();
 
       // Draw main particle
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      context.globalAlpha = alpha;
+      context.fillStyle = p.color;
+      context.beginPath();
+      context.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      context.fill();
     }
 
     function animate() {
       // Fade background
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.03)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = 'rgba(10, 10, 10, 0.03)';
+      context.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
-      ctx.globalAlpha = 1;
+      context.globalAlpha = 1;
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -119,7 +122,7 @@ export function Fireworks() {
         drawParticle(p);
       }
 
-      ctx.globalAlpha = 1;
+      context.globalAlpha = 1;
     }
 
     // Animation loop
@@ -135,8 +138,8 @@ export function Fireworks() {
         if (elapsed - lastBurst > 300) {
           const numBursts = 1 + Math.floor(Math.random() * 3);
           for (let i = 0; i < numBursts; i++) {
-            const x = 100 + Math.random() * (canvas.width - 200);
-            const y = 100 + Math.random() * (canvas.height * 0.5);
+            const x = 100 + Math.random() * (canvasElement.width - 200);
+            const y = 100 + Math.random() * (canvasElement.height * 0.5);
             createExplosion(x, y);
           }
           lastBurst = elapsed;
@@ -150,8 +153,8 @@ export function Fireworks() {
     animationLoop();
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvasElement.width = window.innerWidth;
+      canvasElement.height = window.innerHeight;
     };
 
     window.addEventListener('resize', handleResize);
