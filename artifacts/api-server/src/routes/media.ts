@@ -1,6 +1,14 @@
 import { randomUUID } from "crypto";
 
-let MEDIA_STORE = [];
+interface MediaItem {
+  id: string;
+  objectPath: string;
+  type: string;
+  visibility: string;
+  createdAt: string;
+}
+
+let MEDIA_STORE: MediaItem[] = [];
 
 export default function handler(req, res) {
   if (req.method === "GET") {
