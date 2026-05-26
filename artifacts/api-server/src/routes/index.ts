@@ -6,9 +6,12 @@ import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
-router.use(healthRouter);
-router.use(storageRouter);
-router.use(mediaRouter);
-router.use("/admin-api", adminRouter);
+// كل الـ routes هتبقى تحت /api
+router.use("/api", healthRouter);
+router.use("/api", storageRouter);
+router.use("/api", mediaRouter);
+
+// admin بس ليه prefix خاص
+router.use("/api/admin-api", adminRouter);
 
 export default router;
