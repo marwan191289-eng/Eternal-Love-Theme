@@ -2,16 +2,19 @@ export const config = {
   runtime: "edge",
 };
 
-type MediaItem = {
+// ✅ تعريف نوع البيانات
+interface MediaItem {
   id: string;
   objectPath: string;
   type: string;
   visibility: string;
   createdAt: string;
-};
+}
 
+// ✅ تعريف المتغير مع النوع
 let MEDIA_STORE: MediaItem[] = [];
 
+// ✅ تعريف الأنواع لـ req و Response
 export default async function handler(req: Request): Promise<Response> {
   const method = req.method;
 
@@ -36,8 +39,9 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // ✅ استخدام crypto من globalThis
     const item: MediaItem = {
-      id: globalThis.crypto.randomUUID(), // ✅ الحل هنا
+      id: globalThis.crypto.randomUUID(),
       objectPath,
       type,
       visibility,
